@@ -796,33 +796,49 @@ write_xlsx(coefficients_comb_mod_1_4, "C:/Users/awars/OneDrive - University of I
 
 
 #-----------------------------------------------------------------------------------------------------
-##Re-organizing the dataset, 'coefficients_comb_mod_1_4'
+##Re-organizing the dataset for visualization, 'coefficients_comb_mod_1_4'
 #-----------------------------------------------------------------------------------------------------
-#Approach: 
+#Approach: I built a clean Excel file (Manually) with columns and imported it using escel reader
+#model | tau | Intercept | Age | Gender | Ethnicity | Income,
+#I can directly visualize how the Age coefficient changes across quantiles and models using ggplot2.
 
 library(dplyr)
 library(tidyr)
 
-# Load the Excel file
-coefficients_comb_mod_1_4 <- readxl::read_excel("path_to_file/coefficients_comb_mod_1_4.xlsx")
+# Load necessary libraries
+library(readxl)
+library(ggplot2)
+library(dplyr)
 
-# Reshape the data so that Age, Gender, Income, Ethnicity are under one column
-reshaped_data <- coefficients_comb_mod_1_4 %>%
-  gather(key = "variable", value = "value", 
-         contains("Age"), contains("Gender"), contains("Income"), contains("Ethnicity")) %>%
-  separate(variable, into = c("variable", "model", "quantile"), sep = "_mod") %>%
-  spread(key = "model", value = "value") %>%
-  rename(Age = "Age", Gender = "Gender", Income = "Income", Ethnicity = "Ethnicity")
+# 1️⃣ Read your Excel file
+library(readxl)
+combined_quantregs_10_24_25_ <- read_excel("C:/Users/awars/OneDrive - University of Illinois Chicago/PSOP Sem 1/Aaron Winn Project/IRA Expenses Data/Shared Folder with Aaron/hiv_dataset/combined_quantregs_(10-24-25).xlsx")
+View(combined_quantregs_10_24_25_)
+coefficients_data_hiv <- combined_quantregs_10_24_25_
 
-# Preview the reshaped data
-head(reshaped_data)
+# 2️⃣ Ensure correct data types
+coefficients_data_hiv <- coefficients_data_hiv %>%
+  mutate(
+    tau = as.numeric(tau),     # make sure tau is numeric for plotting
+    model = as.factor(model)   # treat model as categorical
+  )
 
-# Save to Excel
-write_xlsx(reshaped_data, "reshaped_coefficients_comb_mod_1_4.xlsx")
-
-
-
-
-
+# 3️⃣ Plot: Effect of Age across quantiles (τ = 0.01 to 0.99)
+ggplot(coefficients_data_hiv, aes(x = tau, y = Age, color = model, group = model)) +
+  geom_line(size = 1) +
+  geom_point(size = 1.5) +
+  labs(
+    title = "Effect of Age on Total Spending Across Quantiles (τ = 0.01–0.99)",
+    x = "Quantile (τ)",
+    y = "Coefficient for Age",
+    color = "Model"
+  ) +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.1)) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold", hjust = 0.5)
+  )
 
 
