@@ -7,7 +7,7 @@
 #Dataset Information (IMP): dataset contains 102,321 observations (rows)
 #1. Collapse variables from table 1 to solve CONVERGENCE ISSUE within Quantile regression
 #2. Remove variable: 'insurance_type' (Noticed paf_abs_2 code worked)
-
+#3. Create multiple Quant Reg models
 ######################################################################################################################
 names(ira_spells_agg2_top5dis)
 #Assessing levels within specific vars of interest
@@ -15,7 +15,6 @@ unique(ira_spells_agg2_top5dis$Insurance_Type)
 unique(ira_spells_agg2_top5dis$Age_Group)
 unique(ira_spells_agg2_top5dis$disease_clean)
 
-# This a necessary comment
 
 # Recoding variables within the dataset ira_spells_agg2_top5dis
 library(dplyr)
