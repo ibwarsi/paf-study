@@ -801,7 +801,7 @@ write_xlsx(coefficients_comb_mod_1_4, "C:/Users/awars/OneDrive - University of I
 #Approach: I built a clean Excel file (Manually) with columns and imported it using escel reader
 #model | tau | Intercept | Age | Gender | Ethnicity | Income,
 #I can directly visualize how the Age coefficient changes across quantiles and models using ggplot2.
-
+#
 library(dplyr)
 library(tidyr)
 #upload this visual data code
