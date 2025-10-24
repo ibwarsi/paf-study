@@ -478,12 +478,15 @@ qr_results_hiv <- lapply(quantiles, function(tau) {
   return(coef(qr_model))  # Extract coefficients
 })
 
-
 #-----------------------------------------------------------------------------------------------------
-#3. Extract Coefficients and Add to HIV Dataset:
+#3. Extract Coefficients and Add to HIV Dataset: MODEL 1
 #-----------------------------------------------------------------------------------------------------
 #Approach: Extract the intercept (B0) and the coefficient for Age_cat3 (B1) for each quantile and store them in the hiv_data dataset. 
-#...create two columns for each quantile: one for the intercept and one for the Age_cat3 coefficient.
+#...create two columns for each quantile: one for the intercept and one for the Age_cat3 coefficient. Variables to be added in the model incrementally:
+#1. "Age_cat3
+#2. Gender_Male",  
+#3. "Ethnicity_White"
+#4. "Income_cat3",
 
 # Load necessary libraries
 library(quantreg)
@@ -525,25 +528,185 @@ for (i in 1:length(quantiles)) {
 head(hiv_data)
 colnames(hiv_data)
 
+#Interpretation: [columns 39-236] Successfully created columns with Intercept and Age-Intercept from 0-99 quantiles. 
+#At lower quantiles (e.g., τ = 0.1), the coefficient represents the effect of Age_cat3 on low spenders (those who spend less).
+#At higher quantiles (e.g., τ = 0.9), the coefficient represents the effect of Age_cat3 on high spenders (those who spend more).
+#Next steps:
+#(a) Visualize the distribution
+#(b) Add parameters in the model
+#(c) Repeat the process for the other 4 disease areas
+
+
+#-----------------------------------------------------------------------------------------------------
+#4. Visualizing the Effect of Age_cat3 Across Quantiles:
+#-----------------------------------------------------------------------------------------------------
+#Approach: visualize how the coefficient for Age_cat3 changes across different quantiles (τ = 0.01 to τ = 0.99). 
+#...plot the coefficients for Age_cat3_tau_0.01, ..., Age_cat3_tau_0.99 to see if the effect of age varies at different spending levels.
+#a. Extract the coefficients.
+#b. Combine them with the quantile (tau) information.
+#c. Reshape the data into long format.
+#d. Plot the coefficients of Age_cat3 across different quantiles.
+library(ggplot2)
+
+
+#-----------------------------------------------------------------------------------------------------
+#5. MODEL 2: Adding "Gender_Male" predictor to the first model:
+#-----------------------------------------------------------------------------------------------------
+#Other variables to be incrementally added in subsequent models: 
+#2. Gender_Male",  
+#3. "Ethnicity_White"
+#4. "Income_cat3",
+
+# Define quantiles (Q1 to Q99)
+quantiles <- seq(0.01, 0.99, by = 0.01)
+
+# Run quantile regression for each quantile (τ = 0.01 to τ = 0.99) with Age_cat3 and Gender_Male
+qr_results_hiv_mod2 <- lapply(quantiles, function(tau) {
+  qr_model <- rq(total_spending ~ Age_cat3 + Gender_Male, data = hiv_data, tau = tau)  # Added Gender_Male as predictor
+  return(coef(qr_model))  # Extract coefficients (Intercept, Age_cat3, Gender_Male)
+})
+
+# Convert the list of coefficients into a data frame for Model 2
+coefficients_df_mod2 <- do.call(rbind, qr_results_hiv_mod2)
+
+# Convert the coefficients to a data frame and add tau values (quantiles)
+coefficients_df_mod2 <- as.data.frame(coefficients_df_mod2)
+coefficients_df_mod2$tau <- quantiles  # Add tau value for each row
+
+# Rename the columns for clarity with the "mod2" convention
+colnames(coefficients_df_mod2) <- c("Intercept_mod2", "Age_cat3_mod2", "Gender_Male_mod2", "tau")
+
+# View the first few rows to verify the correct structure
+head(coefficients_df_mod2)
+
+# Add the coefficients as new columns in the hiv_data dataset for each quantile (mod2 for Model 2)
+for (i in 1:length(quantiles)) {
+  tau <- quantiles[i]
+  
+  # Create column names for Intercept, Age_cat3, and Gender_Male coefficients at each quantile
+  intercept_col <- paste("Intercept_mod2_tau_", tau, sep = "")  # Updated to model 2 with Gender_Male predictor
+  age_cat3_col <- paste("Age_cat3_mod2_tau_", tau, sep = "")    # Updated to model 2 with Gender_Male predictor
+  gender_male_col <- paste("Gender_Male_mod2_tau_", tau, sep = "")  # Updated to model 2 with Gender_Male predictor
+  
+  # Add the coefficients to hiv_data
+  hiv_data[[intercept_col]] <- coefficients_df_mod2[i, "Intercept_mod2"]
+  hiv_data[[age_cat3_col]] <- coefficients_df_mod2[i, "Age_cat3_mod2"]
+  hiv_data[[gender_male_col]] <- coefficients_df_mod2[i, "Gender_Male_mod2"]
+}
+
+# Check if the new columns are added successfully
+head(hiv_data)
+colnames(hiv_data)  # To ensure new variables were added correctly
 
 
 
+#-----------------------------------------------------------------------------------------------------
+#6. MODEL 3: Adding "Ethnicity_White" predictor to model 2.
+#-----------------------------------------------------------------------------------------------------
+#Other variables to be incrementally added in subsequent models: 
+#3. "Ethnicity_White"
+#4. "Income_cat3",
+
+# Define quantiles (Q1 to Q99)
+quantiles <- seq(0.01, 0.99, by = 0.01)
+
+# Run quantile regression for each quantile (τ = 0.01 to τ = 0.99) with Age_cat3, Gender_Male, and Ethnicity_White
+qr_results_hiv_mod3 <- lapply(quantiles, function(tau) {
+  qr_model <- rq(total_spending ~ Age_cat3 + Gender_Male + Ethnicity_White, data = hiv_data, tau = tau)  # Added Ethnicity_White as predictor
+  return(coef(qr_model))  # Extract coefficients (Intercept, Age_cat3, Gender_Male, Ethnicity_White)
+})
+
+# Convert the list of coefficients into a data frame for Model 3
+coefficients_df_mod3 <- do.call(rbind, qr_results_hiv_mod3)
+
+# Convert the coefficients to a data frame and add tau values (quantiles)
+coefficients_df_mod3 <- as.data.frame(coefficients_df_mod3)
+coefficients_df_mod3$tau <- quantiles  # Add tau value for each row
+
+# Rename the columns for clarity with the "mod3" convention
+colnames(coefficients_df_mod3) <- c("Intercept_mod3", "Age_cat3_mod3", "Gender_Male_mod3", "Ethnicity_White_mod3", "tau")
+
+# View the first few rows to verify the correct structure
+head(coefficients_df_mod3)
+
+# Add the coefficients as new columns in the hiv_data dataset for each quantile (mod3 for Model 3)
+for (i in 1:length(quantiles)) {
+  tau <- quantiles[i]
+  
+  # Create column names for Intercept, Age_cat3, Gender_Male, and Ethnicity_White coefficients at each quantile
+  intercept_col <- paste("Intercept_mod3_tau_", tau, sep = "")  # Updated to model 3 with Ethnicity_White predictor
+  age_cat3_col <- paste("Age_cat3_mod3_tau_", tau, sep = "")    # Updated to model 3 with Ethnicity_White predictor
+  gender_male_col <- paste("Gender_Male_mod3_tau_", tau, sep = "")  # Updated to model 3 with Ethnicity_White predictor
+  ethnicity_white_col <- paste("Ethnicity_White_mod3_tau_", tau, sep = "")  # Updated to model 3 with Ethnicity_White predictor
+  
+  # Add the coefficients to hiv_data
+  hiv_data[[intercept_col]] <- coefficients_df_mod3[i, "Intercept_mod3"]
+  hiv_data[[age_cat3_col]] <- coefficients_df_mod3[i, "Age_cat3_mod3"]
+  hiv_data[[gender_male_col]] <- coefficients_df_mod3[i, "Gender_Male_mod3"]
+  hiv_data[[ethnicity_white_col]] <- coefficients_df_mod3[i, "Ethnicity_White_mod3"]
+}
+
+# Check if the new columns are added successfully
+head(hiv_data)
+colnames(hiv_data)  # To ensure new variables were added correctly
 
 
+#-----------------------------------------------------------------------------------------------------
+#6. MODEL 4: Adding "Ethnicity_White" predictor to model 3.
+#-----------------------------------------------------------------------------------------------------
+#Other variables to be incrementally added in subsequent models: 
+#4. "Income_cat3",
 
+#-----------------------------------------------------------------------------------------------------
+#5. MODEL 4: Adding "Income_cat3" predictor to Model 3
+#-----------------------------------------------------------------------------------------------------
+# The model now includes: Age_cat3, Gender_Male, Ethnicity_White, and Income_cat3 as predictors.
+# Let's run the quantile regression for each quantile (τ = 0.01 to τ = 0.99)
 
+# Define quantiles (Q1 to Q99)
+quantiles <- seq(0.01, 0.99, by = 0.01)
 
+# Run quantile regression for each quantile (τ = 0.01 to τ = 0.99) with Age_cat3, Gender_Male, Ethnicity_White, and Income_cat3
+qr_results_hiv_mod4 <- lapply(quantiles, function(tau) {
+  qr_model <- rq(total_spending ~ Age_cat3 + Gender_Male + Ethnicity_White + Income_cat3, data = hiv_data, tau = tau)  # Added Income_cat3 as predictor
+  return(coef(qr_model))  # Extract coefficients (Intercept, Age_cat3, Gender_Male, Ethnicity_White, Income_cat3)
+})
 
+# Convert the list of coefficients into a data frame for Model 4
+coefficients_df_mod4 <- do.call(rbind, qr_results_hiv_mod4)
 
+# Convert the coefficients to a data frame and add tau values (quantiles)
+coefficients_df_mod4 <- as.data.frame(coefficients_df_mod4)
+coefficients_df_mod4$tau <- quantiles  # Add tau value for each row
 
+# Rename the columns for clarity with the "mod4" convention
+colnames(coefficients_df_mod4) <- c("Intercept_mod4", "Age_cat3_mod4", "Gender_Male_mod4", "Ethnicity_White_mod4", "Income_cat3_mod4", "tau")
 
+# View the first few rows to verify the correct structure
+head(coefficients_df_mod4)
 
+# Add the coefficients as new columns in the hiv_data dataset for each quantile (mod4 for Model 4)
+for (i in 1:length(quantiles)) {
+  tau <- quantiles[i]
+  
+  # Create column names for Intercept, Age_cat3, Gender_Male, Ethnicity_White, and Income_cat3 coefficients at each quantile
+  intercept_col <- paste("Intercept_mod4_tau_", tau, sep = "")  # Updated to model 4 with Income_cat3 predictor
+  age_cat3_col <- paste("Age_cat3_mod4_tau_", tau, sep = "")    # Updated to model 4 with Income_cat3 predictor
+  gender_male_col <- paste("Gender_Male_mod4_tau_", tau, sep = "")  # Updated to model 4 with Income_cat3 predictor
+  ethnicity_white_col <- paste("Ethnicity_White_mod4_tau_", tau, sep = "")  # Updated to model 4 with Income_cat3 predictor
+  income_cat3_col <- paste("Income_cat3_mod4_tau_", tau, sep = "")  # Updated to model 4 with Income_cat3 predictor
+  
+  # Add the coefficients to hiv_data
+  hiv_data[[intercept_col]] <- coefficients_df_mod4[i, "Intercept_mod4"]
+  hiv_data[[age_cat3_col]] <- coefficients_df_mod4[i, "Age_cat3_mod4"]
+  hiv_data[[gender_male_col]] <- coefficients_df_mod4[i, "Gender_Male_mod4"]
+  hiv_data[[ethnicity_white_col]] <- coefficients_df_mod4[i, "Ethnicity_White_mod4"]
+  hiv_data[[income_cat3_col]] <- coefficients_df_mod4[i, "Income_cat3_mod4"]
+}
 
-
-
-
-
-
+# Check if the new columns are added successfully
+head(hiv_data)
+colnames(hiv_data)  # To ensure new variables were added correctly
 
 
 
