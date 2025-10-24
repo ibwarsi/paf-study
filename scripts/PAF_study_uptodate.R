@@ -703,10 +703,123 @@ for (i in 1:length(quantiles)) {
   hiv_data[[ethnicity_white_col]] <- coefficients_df_mod4[i, "Ethnicity_White_mod4"]
   hiv_data[[income_cat3_col]] <- coefficients_df_mod4[i, "Income_cat3_mod4"]
 }
-
 # Check if the new columns are added successfully
 head(hiv_data)
 colnames(hiv_data)  # To ensure new variables were added correctly
+
+#-----------------------------------------------------------------------------------------------------
+#8. Model Comparison & Visualization
+#-----------------------------------------------------------------------------------------------------
+#Approach: Compare the Coefficients Across Models
+#1. Extract coefficients from each model (Model 1, Model 2, Model 3, Model 4)
+#2. Extract Coefficients for Model Comparison
+#3. Visualization of Coefficients Across Models
+#4. 
+
+# Model 1 (just Age_cat3)
+#Renaming model 1 data frame as below for consistency
+coefficients_df_mod1 <- coefficients_df
+# Rename columns for clarity (mod1)
+colnames(coefficients_df) <- c("Intercept_mod1", "Age_cat3_mod1", "tau")
+#Further renaming Model 1 for consistency
+coefficients_mod1 <- coefficients_df[, c("tau", "Intercept_mod1", "Age_cat3_mod1")]
+
+# Model 2 (Age_cat3 + Gender_Male)
+coefficients_mod2 <- coefficients_df_mod2[, c("tau", "Intercept_mod2", "Age_cat3_mod2", "Gender_Male_mod2")]
+
+# Model 3 (Age_cat3 + Gender_Male + Ethnicity_White)
+coefficients_mod3 <- coefficients_df_mod3[, c("tau", "Intercept_mod3", "Age_cat3_mod3", "Gender_Male_mod3", "Ethnicity_White_mod3")]
+
+# Model 4 (Age_cat3 + Gender_Male + Ethnicity_White + Income_cat3)
+coefficients_mod4 <- coefficients_df_mod4[, c("tau", "Intercept_mod4", "Age_cat3_mod4", "Gender_Male_mod4", "Ethnicity_White_mod4", "Income_cat3_mod4")]
+
+# Ensure consistency across all models
+# All models should have the same number of rows corresponding to the quantiles (tau), i.e., 99 rows for Q1 to Q99
+# Check if all models have the same number of rows (quantiles)
+nrow(coefficients_mod1)  # Should be 99 (for tau from 0.01 to 0.99)
+nrow(coefficients_mod2)  # Should be 99
+nrow(coefficients_mod3)  # Should be 99
+nrow(coefficients_mod4)  # Should be 99
+# Check coefficients for each model
+head(coefficients_mod1)  # Ensure coefficients for Model 1
+head(coefficients_mod2)  # Ensure coefficients for Model 2
+head(coefficients_mod3)  # Ensure coefficients for Model 3
+head(coefficients_mod4)  # Ensure coefficients for Model 4
+
+# Combine all the coefficients into one data frame for comparison
+coefficients_comb_mod_1_4 <- bind_rows(
+  mutate(coefficients_mod1, model = "Model 1"),
+  mutate(coefficients_mod2, model = "Model 2"),
+  mutate(coefficients_mod3, model = "Model 3"),
+  mutate(coefficients_mod4, model = "Model 4")
+)
+
+# View the first few rows of the combined coefficients table
+head(coefficients_comb_mod_1_4)
+
+# Check for NA values in the combined data frame
+sum(is.na(coefficients_comb_mod_1_4))  # Check for NA values
+
+####################################################################################
+#dataset created named: "coefficients_comb_mod_1_4"
+#This dataset has 
+#Data Visual for hiv_data
+#####################################################################################
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+
+###### MODEL 1 ######
+#Appraoch: Test for model 1 to see if it works --> Update the Excel sheet
+# Create a plot of Age_cat3 coefficients across quantiles (for Model 1 to Model 4)
+ggplot(coefficients_comb_mod_1_4, aes(x = tau, y = Age_cat3_mod1, color = model)) +
+  geom_line(size = 1) +   # Line plot
+  geom_point(size = 2) +  # Points on the line to indicate the actual coefficients
+  labs(title = "Effect of Age_cat3 (model 1) on Total Spending Across Quantiles (τ = 0.01 to 0.99)",
+       x = "Quantile (τ)",
+       y = "Coefficient for Age_cat3") +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.1)) +  # x-axis with quantile labels (τ)
+  theme_minimal() +   # Use a minimal theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for readability
+
+
+###### Downloading Dataset #####
+getwd()
+
+# Install and load the writexl package if you don't have it installed
+# install.packages("writexl")
+library(writexl)
+
+# Export the dataset to an Excel file
+write_xlsx(coefficients_comb_mod_1_4, "C:/Users/awars/OneDrive - University of Illinois Chicago/PSOP Sem 1/Aaron Winn Project/IRA Expenses Data/Shared Folder with Aaron/coefficients_comb_mod_1_4.xlsx")
+
+
+
+#-----------------------------------------------------------------------------------------------------
+##Re-organizing the dataset, 'coefficients_comb_mod_1_4'
+#-----------------------------------------------------------------------------------------------------
+#Approach: 
+
+library(dplyr)
+library(tidyr)
+
+# Load the Excel file
+coefficients_comb_mod_1_4 <- readxl::read_excel("path_to_file/coefficients_comb_mod_1_4.xlsx")
+
+# Reshape the data so that Age, Gender, Income, Ethnicity are under one column
+reshaped_data <- coefficients_comb_mod_1_4 %>%
+  gather(key = "variable", value = "value", 
+         contains("Age"), contains("Gender"), contains("Income"), contains("Ethnicity")) %>%
+  separate(variable, into = c("variable", "model", "quantile"), sep = "_mod") %>%
+  spread(key = "model", value = "value") %>%
+  rename(Age = "Age", Gender = "Gender", Income = "Income", Ethnicity = "Ethnicity")
+
+# Preview the reshaped data
+head(reshaped_data)
+
+# Save to Excel
+write_xlsx(reshaped_data, "reshaped_coefficients_comb_mod_1_4.xlsx")
+
 
 
 
